@@ -32,6 +32,7 @@ args = argp.parse_args()
 
 # Save the device
 device = torch.cuda.current_device() if torch.cuda.is_available() else 'cpu'
+# device = torch.device("mps") if torch.backends.mps.is_available() else 'cpu'
 
 # TensorBoard training log
 writer = SummaryWriter(log_dir='expt/%s/%s_%s_%d_pt_lr_%f_ft_lr_%f' % (
@@ -69,6 +70,10 @@ if args.variant == 'vanilla':
     # pass # [part c] Make some model here
 elif args.variant == 'perceiver':
     # set mconf.perceiver, and mconf.bottleneck_dim parameters appropriately.
+    mconf.perceiver = True
+    mconf.bottleneck_dim = args.bottleneck_dim
+    model = model.GPT(mconf).to(device)
+    # pass # [part c] Make some model here
     pass # [part g] Make some other model here
 else:
     raise ValueError("Unknown model variant")
@@ -101,8 +106,8 @@ if args.function == 'pretrain':
         lr_decay=True,
         warmup_tokens=512*20,
         final_tokens=200*len(pretrain_dataset)*block_size,
-        # num_workers=4,
-        num_workers=0,
+        num_workers=2,
+        # num_workers=0,
         writer=writer
     )
     trainer = trainer.Trainer(

@@ -48,7 +48,9 @@ class Trainer:
         # take over whatever gpus are on the system
         self.device = 'cpu'
         if torch.cuda.is_available():
+        # if torch.backends.mps.is_available():
             self.device = torch.cuda.current_device()
+            # self.device = torch.device("mps")
             self.model = torch.nn.DataParallel(self.model).to(self.device)
 
     def save_checkpoint(self):

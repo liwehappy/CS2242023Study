@@ -90,7 +90,18 @@ class DownProjectBlock(nn.Module):
         super().__init__()
         ### YOUR CODE HERE
         ### Hint: Copy over the code from Block and make necessary modifications.
-        pass
+        self.ln1 = nn.LayerNorm(config.n_embd)
+        self.ln2 = nn.LayerNorm(config.n_embd)
+        # self.C = nn.init.xavier_uniform_(torch.empty(1, config.bottleneck_dim, config.n_embd)).to(torch.device("mps"))
+        self.C = nn.init.xavier_uniform_(torch.empty(1, config.bottleneck_dim, config.n_embd)).to(("cuda:0"))
+        self.attn = attention.CausalCrossAttention(config)
+        self.mlp = nn.Sequential(
+            nn.Linear(config.n_embd, 4 * config.n_embd),
+            nn.GELU(),
+            nn.Linear(4 * config.n_embd, config.n_embd),
+            nn.Dropout(config.resid_pdrop),
+        )
+        # pass
         ### END YOUR CODE
 
     def forward(self, x_input):
@@ -100,7 +111,14 @@ class DownProjectBlock(nn.Module):
         ### YOUR CODE HERE
         ### Hint: Copy over the code from Block and make necessary modifications.
         ### Should be around 3-5 lines.
-        pass
+        
+        # x = self.attn(self.ln1(x_input), self.ln1(self.C))
+        x = self.attn(x_input, self.ln1(self.C))
+        # x = x + x
+        x = x + self.mlp(self.ln2(x))
+        # x = self.mlp(x)
+        return x
+        # pass
         ### END YOUR CODE
     
     
@@ -114,8 +132,16 @@ class UpProjectBlock(nn.Module):
     def __init__(self, config):
         super().__init__()
         ### YOUR CODE HERE
-        ### Hint: Copy over the code from Block and make necessary modifications.
-        pass
+        self.ln1 = nn.LayerNorm(config.n_embd)
+        self.ln2 = nn.LayerNorm(config.n_embd)
+        self.attn = attention.CausalCrossAttention(config)
+        self.mlp = nn.Sequential(
+            nn.Linear(config.n_embd, 4 * config.n_embd),
+            nn.GELU(),
+            nn.Linear(4 * config.n_embd, config.n_embd),
+            nn.Dropout(config.resid_pdrop),
+        )
+        # pass
         ### END YOUR CODE
     
     def forward(self, y, x_input):
@@ -126,7 +152,11 @@ class UpProjectBlock(nn.Module):
         ### YOUR CODE HERE
         ### Hint: Copy over the code from Block and make necessary modifications.
         ### Should be around 3-5 lines.
-        pass
+        output = self.attn(self.ln1(y), x_input)
+        # output = x_input + output
+        output = output + self.mlp(self.ln2(output)) 
+        return output 
+        # pass
         ### END YOUR CODE
     
 
